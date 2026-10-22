@@ -31,11 +31,11 @@ WioCellular本体の `src/` や依存関係は変更しません。
 
 ## サンプルを試す
 
-以降のコマンドは、このREADMEがある `extras/lte-ota` で実行します。
+以降のコマンドは、このREADMEがある `lte-ota` で実行します。
 
 ```bash
-git clone https://github.com/SeeedJP/wio_cellular.git
-cd wio_cellular/extras/lte-ota
+git clone https://github.com/SeeedJP/wio_bg770a_recipes.git
+cd wio_bg770a_recipes/lte-ota
 python3 -m venv .venv
 .venv/bin/python -m pip install cryptography
 ```
@@ -271,6 +271,12 @@ USB DFU／SWDによる書換えや秘密鍵漏えいは保護範囲外です。
 起動できない更新アプリからの自動ロールバック、更新結果の遠隔通知、端末群の配信管理画面も含みません。
 
 ## 保守と検証
+
+このレシピは [SeeedJP/wio_cellular PR #64](https://github.com/SeeedJP/wio_cellular/pull/64)
+の [コミット `e8946f8`](https://github.com/takao2704/wio_cellular/commit/e8946f83867ccd951a61ee7cb7052b08cc74f1fe)
+から移植しました。元の著者・著者日時と元コミットへの参照を取り込みコミットに保持し、
+レシピ用の配置・リンク変更は別コミットにしています。ライブラリ、スケッチ、配布ツールの実装は同一です。
+以下の実機結果は元 PR での検証履歴であり、この移植で実機への書込みやOTAを再実施したものではありません。
 
 `src/` にmanifest・更新制御、HTTP/UFS転送、Bank 1書込みの実装をまとめています。
 公開ヘッダ名とC++ APIは維持していますが、独立した3パッケージとしては配布しません。
