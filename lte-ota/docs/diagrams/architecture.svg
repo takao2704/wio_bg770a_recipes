@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900" role="img" aria-labelledby="title desc">
+<title id="title">LTE OTA の全体構成</title><desc id="desc">左から右へ：PCで作る → SORACOMへ置く → 端末が取得・検証して更新する</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1263a0"/></marker></defs>
+<rect width="1800" height="900" fill="#fff"/>
+<g font-family="Arial, 'Hiragino Kaku Gothic ProN', 'Noto Sans CJK JP', sans-serif" fill="#162b45">
+<text x="40" y="52" font-size="34" font-weight="700" fill="#162b45">LTE OTA の全体構成</text>
+<text x="40" y="91" font-size="22" font-weight="400" fill="#162b45">左から右へ：PCで作る → SORACOMへ置く → 端末が取得・検証して更新する</text>
+<rect x="40" y="125" width="330" height="635" rx="16" fill="#fafcfe" stroke="#aec3d5" stroke-width="2"/>
+<text x="60" y="163" font-size="26" font-weight="700" fill="#162b45">1  開発者PC</text>
+<rect x="430" y="125" width="410" height="635" rx="16" fill="#fafcfe" stroke="#aec3d5" stroke-width="2"/>
+<text x="450" y="163" font-size="26" font-weight="700" fill="#162b45">2  SORACOM</text>
+<rect x="900" y="125" width="860" height="635" rx="16" fill="#fafcfe" stroke="#aec3d5" stroke-width="2"/>
+<text x="920" y="163" font-size="26" font-weight="700" fill="#162b45">3  Wio BG770A HW v1.0</text>
+<rect x="60" y="185" width="290" height="150" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="78" y="221" font-size="24" font-weight="700" fill="#162b45">ビルド・署名</text>
+<text x="78" y="261" font-size="23" font-weight="400" fill="#162b45">秘密鍵はPC側に保管</text>
+<text x="78" y="294" font-size="23" font-weight="400" fill="#162b45">公開鍵はアプリへ組込</text>
+<rect x="60" y="375" width="290" height="140" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="78" y="411" font-size="24" font-weight="700" fill="#162b45">manifest.json</text>
+<text x="78" y="451" font-size="23" font-weight="400" fill="#162b45">版・URL・ハッシュ</text>
+<text x="78" y="484" font-size="23" font-weight="400" fill="#162b45">署名を含む更新情報</text>
+<rect x="60" y="575" width="290" height="125" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="78" y="611" font-size="24" font-weight="700" fill="#162b45">firmware.bin</text>
+<text x="78" y="651" font-size="23" font-weight="400" fill="#162b45">ZIPから抽出したアプリ</text>
+<path d="M 205 335 L 205 375" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 76 335 L 47 335 L 47 638 L 60 638" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="450" y="375" width="370" height="140" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="468" y="411" font-size="24" font-weight="700" fill="#162b45">Metadata のユーザーデータ</text>
+<text x="468" y="451" font-size="23" font-weight="400" fill="#162b45">SIMグループにJSONを設定</text>
+<text x="468" y="484" font-size="23" font-weight="400" fill="#162b45">GET /v1/userdata</text>
+<rect x="450" y="575" width="370" height="125" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="468" y="611" font-size="24" font-weight="700" fill="#162b45">Harvest Files</text>
+<text x="468" y="651" font-size="23" font-weight="400" fill="#162b45">firmware.bin を保存</text>
+<text x="468" y="684" font-size="23" font-weight="400" fill="#162b45">GET manifestのURL</text>
+<path d="M 350 445 L 450 445" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 350 638 L 450 638" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="458" y="225" font-size="23" font-weight="400" fill="#162b45">更新情報とアプリは別の場所。</text>
+<text x="458" y="258" font-size="23" font-weight="400" fill="#162b45">manifestのJSON内容を設定し、</text>
+<text x="458" y="291" font-size="23" font-weight="400" fill="#162b45">バイナリだけをアップロード。</text>
+<rect x="920" y="375" width="210" height="230" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="938" y="411" font-size="24" font-weight="700" fill="#162b45">BG770A</text>
+<text x="938" y="451" font-size="22" font-weight="400" fill="#162b45">LTE・HTTP</text>
+<text x="938" y="483" font-size="22" font-weight="400" fill="#162b45">端末からGET</text>
+<text x="938" y="515" font-size="22" font-weight="400" fill="#162b45">firmwareは</text>
+<text x="938" y="547" font-size="22" font-weight="400" fill="#162b45">UFS一時ファイル</text>
+<text x="938" y="579" font-size="22" font-weight="400" fill="#162b45">を経由</text>
+<path d="M 820 445 L 920 445" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M 820 638 L 870 638 L 870 550 L 920 550" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<text x="850" y="408" font-size="22" font-weight="700" fill="#162b45">①</text>
+<text x="850" y="608" font-size="22" font-weight="700" fill="#162b45">②</text>
+<rect x="1160" y="185" width="580" height="545" rx="16" fill="#fafcfe" stroke="#aec3d5" stroke-width="2"/>
+<text x="1180" y="223" font-size="26" font-weight="700" fill="#162b45">nRF52840 / 内部Flash</text>
+<rect x="1180" y="250" width="245" height="150" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1198" y="286" font-size="24" font-weight="700" fill="#162b45">Bank 0：実行アプリ</text>
+<text x="1198" y="326" font-size="22" font-weight="400" fill="#162b45">WioOtaAgent</text>
+<text x="1198" y="358" font-size="22" font-weight="400" fill="#162b45">公開鍵で署名検証</text>
+<rect x="1460" y="250" width="260" height="150" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1478" y="286" font-size="24" font-weight="700" fill="#162b45">Bank 1：次のアプリ</text>
+<text x="1478" y="326" font-size="22" font-weight="400" fill="#162b45">順次書込み・読戻し</text>
+<text x="1478" y="358" font-size="22" font-weight="400" fill="#162b45">全量受信後に照合</text>
+<path d="M 1130 410 L 1150 410 L 1150 325 L 1180 325" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<text x="920" y="295" font-size="20" font-weight="400" fill="#162b45">ATコマンド / データ</text>
+<path d="M 1425 325 L 1460 325" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1180" y="460" width="245" height="120" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1198" y="496" font-size="24" font-weight="700" fill="#162b45">InternalFS</text>
+<text x="1198" y="536" font-size="22" font-weight="400" fill="#162b45">最高適用版を保存</text>
+<path d="M 1300 400 L 1300 460" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<rect x="1460" y="460" width="260" height="120" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1478" y="496" font-size="24" font-weight="700" fill="#162b45">bootloader settings</text>
+<text x="1478" y="536" font-size="22" font-weight="400" fill="#162b45">検証後に適用登録</text>
+<path d="M 1425 375 L 1442 375 L 1442 520 L 1460 520" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1180" y="620" width="540" height="90" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1198" y="656" font-size="24" font-weight="700" fill="#162b45">ブートローダー：再起動後にコピー</text>
+<text x="1198" y="690" font-size="22" font-weight="400" fill="#162b45">Bank 1 → Bank 0 を確認して起動</text>
+<path d="M 1590 580 L 1590 620" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<path d="M 1720 360 L 1732 360 L 1732 665 L 1720 665" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="40" y="808" font-size="24" font-weight="400" fill="#162b45">① manifest取得・署名検証 → ② 条件を満たす場合だけfirmware取得。秘密鍵はクラウド・端末へ置きません。</text>
+<text x="40" y="854" font-size="22" font-weight="400" fill="#162b45">凡例：実線＝データ・保存、双方向＝要求と応答、破線＝再起動後の参照。領域は容量比ではありません。</text>
+</g></svg>

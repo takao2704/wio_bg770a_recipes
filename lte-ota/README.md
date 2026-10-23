@@ -21,40 +21,9 @@ CLIとPlatformIOを使う場合のビルド・初回書込みは[別経路の手
 完成するのは、**起動時に自分の更新を確認できるアプリ**です。最初に版1をUSBで導入した後は、
 PCで版2の配信ファイルを作り、端末がLTEで取得して更新します。クラウド側が端末へ書き込む仕組みではなく、端末からのHTTP GETで始まります。
 
-```mermaid
-flowchart TB
-  subgraph PC["開発者PC"]
-    BUILD["ビルド・署名<br/>秘密鍵はPC側に保管<br/>公開鍵はアプリに組込"]
-    BIN["firmware.bin<br/>アプリ本体"]
-    MAN["manifest.json<br/>URL・版・ハッシュ・署名"]
-    BUILD -->|"ZIPから抽出"| BIN
-    BUILD -->|"ハッシュ等に署名"| MAN
-  end
-  subgraph CLOUD["SORACOM"]
-    FILES["Harvest Files<br/>バイナリを保存"]
-    META["SIMグループのMetadata<br/>ユーザーデータにJSON内容を保存"]
-  end
-  BIN -->|"アップロード"| FILES
-  MAN -->|"内容を設定"| META
-  subgraph WIO["Wio BG770A HW v1.0"]
-    MODEM["BG770A：LTE・HTTP<br/>firmwareはUFS一時ファイル経由"]
-    subgraph MCU["nRF52840 MCU / 内部Flash"]
-      APP["Bank 0のアプリ / WioOtaAgent<br/>組込み公開鍵で署名検証"]
-      BANK["Bank 1<br/>次のアプリを一時格納"]
-      FS["InternalFS<br/>最高適用版を保存"]
-      SETTINGS["bootloader settings<br/>適用するサイズ・CRC等"]
-      BOOT["ブートローダー<br/>再起動後、Bank 1をBank 0へコピー・起動"]
-    end
-  end
-  META <-->|"LTE GET /v1/userdata<br/>応答：manifest"| MODEM
-  FILES <-->|"LTE GET manifestのURL<br/>応答：firmware"| MODEM
-  MODEM <-->|"ATコマンド / 受信データ"| APP
-  APP -->|"順次書込"| BANK
-  APP <-->|"起動時に読込・記録"| FS
-  APP -->|"全量検証後に登録"| SETTINGS
-  SETTINGS -.->|"再起動後に参照"| BOOT
-  BANK -->|"コピー元"| BOOT
-```
+![LTE OTAの全体構成：PC、SORACOM、端末を左から右に配置](docs/diagrams/architecture.png)
+
+[SVGで拡大](docs/diagrams/architecture.svg)・[図の編集と再生成](docs/diagrams/README.md)
 
 凡例：実線はデータの受渡し・保存、破線は制御の参照です。双方向の線は要求と応答を表し、HTTP GETは端末側から送ります。Flashの箱は役割を表し、アドレス順や容量比ではありません。
 
@@ -83,46 +52,11 @@ firmwareのダウンロード先であるBG770AのUFSや、更新イメージを
 
 次の図は、このレシピの署名必須サンプルで新しい版を適用する経路です。下段の反映は[対応bootloaderを確認済み](docs/bootloader.md)であることが前提です。
 
-```mermaid
-flowchart TD
-  START["起動：最高適用版を読込<br/>現在の版を記録・LTE接続"]
-  READY{"保存状態・LTE接続は正常？"}
-  STOP0["OTAを開始しない"]
-  GET["Metadataからmanifestを取得<br/>形式・対象HW・URL・サイズを確認"]
-  SIG["公開鍵でmanifestの署名検証<br/>次に版・rollout・適用判断"]
-  ACCEPT{"新しい版で、すべての条件を満たす？"}
-  STOP1["取得失敗・不正・旧版・同版・対象外<br/>firmware取得・適用登録をしない"]
-  STAGE["firmwareをGET・応答確認<br/>Bank 1を準備 → UFS経由で書込<br/>読戻し確認・CRC16とSHA-256計算"]
-  VERIFY["全量・CRC16・SHA-256を照合<br/>起動先情報（ベクタ）を確認"]
-  VALID{"取得・書込・全量検証に成功？"}
-  STOP2["失敗：適用登録・更新用リセットをしない<br/>Bank 1に途中データが残る場合がある"]
-  OFF["BG770Aを停止"]
-  REGISTER{"モデム停止・settingsへの適用登録に成功？"}
-  STOP3["失敗を返し、更新用リセットをしない<br/>settings書込失敗は復旧確認が必要"]
-  RESET["MCUをリセット"]
-  COPY["bootloaderがsettingsを参照<br/>Bank 1をBank 0へコピーし、アプリを確認して起動"]
-  CHECK["新アプリが現在の版を記録<br/>版・最高適用版・no updateを確認"]
-  START --> READY
-  READY -->|"いいえ"| STOP0
-  READY -->|"はい"| GET
-  GET -->|"取得・形式確認OK"| SIG
-  GET -->|"失敗"| STOP1
-  SIG --> ACCEPT
-  ACCEPT -->|"いいえ"| STOP1
-  ACCEPT -->|"はい"| STAGE
-  STAGE -->|"転送・書込失敗"| STOP2
-  STAGE -->|"受信完了"| VERIFY
-  VERIFY --> VALID
-  VALID -->|"いいえ"| STOP2
-  VALID -->|"はい"| OFF
-  OFF --> REGISTER
-  REGISTER -->|"いいえ"| STOP3
-  REGISTER -->|"はい"| RESET
-  RESET --> COPY
-  COPY --> CHECK
-```
+![LTE OTAの更新フロー：上段①〜④、下段⑤〜⑧を左から右に読む](docs/diagrams/update-flow.png)
 
-凡例：四角は処理、ひし形は判定です。失敗経路には「実行しない処理」を記しています。転送・書込み中の失敗も全量検証へ進まず終了します。
+[SVGで拡大](docs/diagrams/update-flow.svg)・[図の編集と再生成](docs/diagrams/README.md)
+
+読み方：上段①〜④、下段⑤〜⑧をそれぞれ左から右へ進みます。青い矢印は成功時の処理順序、橙色の注記は失敗時に実行しない処理です。転送・書込み中の失敗は全量検証へ進まず終了します。
 
 **アプリ**はfirmwareを取得する前にmanifestの署名を検証し、署名で保護されたSHA-256と取得データを全量受信後に照合します。
 書込みと全量検証はこの順なので、未検証データも一時的にBank 1へ入りますが、検証失敗なら適用登録しません。

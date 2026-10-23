@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900" role="img" aria-labelledby="title desc">
+<title id="title">LTE OTA の更新フロー</title><desc id="desc">各段を左から右へ読む：①〜④ 判定・取得 → ⑤〜⑧ 検証・反映（署名必須サンプル）</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1263a0"/></marker></defs>
+<rect width="1800" height="900" fill="#fff"/>
+<g font-family="Arial, 'Hiragino Kaku Gothic ProN', 'Noto Sans CJK JP', sans-serif" fill="#162b45">
+<text x="40" y="52" font-size="34" font-weight="700" fill="#162b45">LTE OTA の更新フロー</text>
+<text x="40" y="91" font-size="22" font-weight="400" fill="#162b45">各段を左から右へ読む：①〜④ 判定・取得 → ⑤〜⑧ 検証・反映（署名必須サンプル）</text>
+<rect x="40" y="150" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="58" y="186" font-size="24" font-weight="700" fill="#162b45">① 起動・準備</text>
+<text x="58" y="226" font-size="23" font-weight="400" fill="#162b45">最高適用版を読み込む</text>
+<text x="58" y="259" font-size="23" font-weight="400" fill="#162b45">現在の版を記録・LTE接続</text>
+<path d="M 440 242 L 480 242" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="480" y="150" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="498" y="186" font-size="24" font-weight="700" fill="#162b45">② 更新情報を取得</text>
+<text x="498" y="226" font-size="23" font-weight="400" fill="#162b45">Metadataからmanifest取得</text>
+<text x="498" y="259" font-size="23" font-weight="400" fill="#162b45">形式・HW・URL・サイズ確認</text>
+<path d="M 880 242 L 920 242" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="920" y="150" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="938" y="186" font-size="24" font-weight="700" fill="#162b45">③ 署名と適用条件</text>
+<text x="938" y="226" font-size="23" font-weight="400" fill="#162b45">公開鍵で署名を検証</text>
+<text x="938" y="259" font-size="23" font-weight="400" fill="#162b45">次に版・rollout・適用判断</text>
+<path d="M 1320 242 L 1360 242" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1360" y="150" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1378" y="186" font-size="24" font-weight="700" fill="#162b45">④ アプリを取得・格納</text>
+<text x="1378" y="226" font-size="23" font-weight="400" fill="#162b45">GET応答確認 → Bank 1準備</text>
+<text x="1378" y="259" font-size="23" font-weight="400" fill="#162b45">UFS経由で書込み・読戻し</text>
+<text x="1378" y="292" font-size="23" font-weight="400" fill="#162b45">CRC16 / SHA-256を計算</text>
+<rect x="40" y="510" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="58" y="546" font-size="24" font-weight="700" fill="#162b45">⑤ 全量を照合</text>
+<text x="58" y="586" font-size="23" font-weight="400" fill="#162b45">サイズ・CRC16・SHA-256</text>
+<text x="58" y="619" font-size="23" font-weight="400" fill="#162b45">起動先情報（ベクタ）を確認</text>
+<path d="M 440 602 L 480 602" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="480" y="510" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="498" y="546" font-size="24" font-weight="700" fill="#162b45">⑥ 適用を登録</text>
+<text x="498" y="586" font-size="23" font-weight="400" fill="#162b45">BG770Aを停止</text>
+<text x="498" y="619" font-size="23" font-weight="400" fill="#162b45">settingsに適用情報を登録</text>
+<text x="498" y="652" font-size="23" font-weight="400" fill="#162b45">両方に成功したらリセット</text>
+<path d="M 880 602 L 920 602" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="920" y="510" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="938" y="546" font-size="24" font-weight="700" fill="#162b45">⑦ bootloaderで反映</text>
+<text x="938" y="586" font-size="23" font-weight="400" fill="#162b45">Bank 1 → Bank 0へコピー</text>
+<text x="938" y="619" font-size="23" font-weight="400" fill="#162b45">アプリを確認して起動</text>
+<path d="M 1320 602 L 1360 602" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1360" y="510" width="400" height="185" rx="12" fill="#f2f7fc" stroke="#bdcede" stroke-width="2"/>
+<text x="1378" y="546" font-size="24" font-weight="700" fill="#162b45">⑧ 起動後を確認</text>
+<text x="1378" y="586" font-size="23" font-weight="400" fill="#162b45">新しい版・最高適用版を確認</text>
+<text x="1378" y="619" font-size="23" font-weight="400" fill="#162b45">同じmanifestで no update</text>
+<text x="40" y="132" font-size="24" font-weight="700" fill="#1263a0">判定・取得</text>
+<text x="40" y="492" font-size="24" font-weight="700" fill="#087d70">検証・反映</text>
+<path d="M 1760 242 L 1780 242 L 1780 440 L 20 440 L 20 602 L 40 602" fill="none" stroke="#1263a0" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="700" y="426" font-size="22" font-weight="700" fill="#1263a0">④ の受信完了後、⑤ へ</text>
+<rect x="40" y="350" width="400" height="48" rx="8" fill="#fff3e7"/>
+<text x="52" y="381" font-size="20" font-weight="400" fill="#aa530b">保存状態・LTE異常：開始しない</text>
+<rect x="480" y="350" width="840" height="48" rx="8" fill="#fff3e7"/>
+<text x="492" y="381" font-size="20" font-weight="400" fill="#aa530b">取得失敗・不正・旧版・同版・対象外：firmwareを取得しない</text>
+<rect x="1360" y="350" width="400" height="48" rx="8" fill="#fff3e7"/>
+<text x="1372" y="381" font-size="20" font-weight="400" fill="#aa530b">転送・書込失敗：登録しない</text>
+<rect x="40" y="710" width="400" height="48" rx="8" fill="#fff3e7"/>
+<text x="52" y="741" font-size="20" font-weight="400" fill="#aa530b">検証失敗：適用登録しない</text>
+<rect x="480" y="710" width="400" height="48" rx="8" fill="#fff3e7"/>
+<text x="492" y="741" font-size="20" font-weight="400" fill="#aa530b">失敗：更新用リセットしない</text>
+<text x="920" y="741" font-size="20" font-weight="400" fill="#aa530b">自動ロールバックなし / 版の記録は業務全体の正常判定ではない</text>
+<text x="40" y="811" font-size="24" font-weight="400" fill="#162b45">署名は取得前、全量ハッシュ照合は書込み後。失敗時、Bank 1に途中データが残る場合があります。</text>
+<text x="40" y="854" font-size="22" font-weight="400" fill="#162b45">settings書込み・コピー中の電源断からの復旧は保証していません。対応bootloaderとUSB復旧環境が前提です。</text>
+</g></svg>
