@@ -16,6 +16,149 @@ CLIとPlatformIOを使う場合のビルド・初回書込みは[別経路の手
 ホスト上のビルド・テストと元PRの過去の実機結果は[出典・検証履歴](docs/validation.md)で区別しています。
 画面やログを今回の実測として掲載していません。
 
+## 完成するものと全体構成
+
+完成するのは、**起動時に自分の更新を確認できるアプリ**です。最初に版1をUSBで導入した後は、
+PCで版2の配信ファイルを作り、端末がLTEで取得して更新します。クラウド側が端末へ書き込む仕組みではなく、端末からのHTTP GETで始まります。
+
+```mermaid
+flowchart TB
+  subgraph PC["開発者PC"]
+    BUILD["ビルド・署名<br/>秘密鍵はPC側に保管<br/>公開鍵はアプリに組込"]
+    BIN["firmware.bin<br/>アプリ本体"]
+    MAN["manifest.json<br/>URL・版・ハッシュ・署名"]
+    BUILD -->|"ZIPから抽出"| BIN
+    BUILD -->|"ハッシュ等に署名"| MAN
+  end
+  subgraph CLOUD["SORACOM"]
+    FILES["Harvest Files<br/>バイナリを保存"]
+    META["SIMグループのMetadata<br/>ユーザーデータにJSON内容を保存"]
+  end
+  BIN -->|"アップロード"| FILES
+  MAN -->|"内容を設定"| META
+  subgraph WIO["Wio BG770A HW v1.0"]
+    MODEM["BG770A：LTE・HTTP<br/>firmwareはUFS一時ファイル経由"]
+    subgraph MCU["nRF52840 MCU / 内部Flash"]
+      APP["Bank 0のアプリ / WioOtaAgent<br/>組込み公開鍵で署名検証"]
+      BANK["Bank 1<br/>次のアプリを一時格納"]
+      FS["InternalFS<br/>最高適用版を保存"]
+      SETTINGS["bootloader settings<br/>適用するサイズ・CRC等"]
+      BOOT["ブートローダー<br/>再起動後、Bank 1をBank 0へコピー・起動"]
+    end
+  end
+  META <-->|"LTE GET /v1/userdata<br/>応答：manifest"| MODEM
+  FILES <-->|"LTE GET manifestのURL<br/>応答：firmware"| MODEM
+  MODEM <-->|"ATコマンド / 受信データ"| APP
+  APP -->|"順次書込"| BANK
+  APP <-->|"起動時に読込・記録"| FS
+  APP -->|"全量検証後に登録"| SETTINGS
+  SETTINGS -.->|"再起動後に参照"| BOOT
+  BANK -->|"コピー元"| BOOT
+```
+
+凡例：実線はデータの受渡し・保存、破線は制御の参照です。双方向の線は要求と応答を表し、HTTP GETは端末側から送ります。Flashの箱は役割を表し、アドレス順や容量比ではありません。
+
+**開発者**がビルド・署名と配信設定を行い、**BG770A**が通信、**MCUのアプリ**が更新判定と検証、**ブートローダー**が再起動後の反映を担当します。
+秘密鍵はアップロードせず、端末はアプリ内の公開鍵でmanifestを検証します。署名不一致・旧版・配信対象外ならfirmwareを取得しません。
+Metadataは端末が所属するSIMグループの設定です。`manifest.json` というファイルをHarvest Filesへ置くのではなく、JSONの内容をユーザーデータへ設定します。
+具体的な配置は[配信手順](#publish-update)、鍵の用意は[署名鍵の準備](#signing-key)へ進んでください。
+
+### ファイルと設定の置き場所
+
+| ファイル・設定 | PC側 | 配信先・端末側での役割 |
+|---|---|---|
+| 秘密鍵 | リポジトリ外の `signing-key.pem` | PC側で署名にだけ使用。端末・クラウドへ置かない |
+| 公開鍵 | `examples/CellularStatusOta/ota_manifest_public_key.h` | アプリへ組み込まれ、manifestの署名を検証 |
+| アプリの版 | `ota_sketch_config.h` の `APP_VERSION`（CLI/PlatformIOはビルド設定） | 実行中の版。manifestの版と一致させてビルド・配信 |
+| 更新アプリ本体 | `dist/sample-update/firmware.bin` | Harvest Filesの `/wio-bg770a/sample-update/firmware.bin`。取得URLは `http://harvest-files.soracom.io/wio-bg770a/sample-update/firmware.bin` |
+| 更新情報 | `dist/sample-update/manifest.json` | 検証専用SIMグループのMetadataユーザーデータ。端末は `http://metadata.soracom.io/v1/userdata` で取得 |
+| 版の保存記録 | PCから配布しない | MCUのInternalFS内の2つのレコード。最高適用版を通常RESET後も保持 |
+| 適用登録 | PCから配布しない | MCUのbootloader settings。アプリが検証済みイメージの適用を登録し、bootloaderが読む |
+
+InternalFSは、電源を切っても残る小さなファイル保存領域です。ここでは「どの版まで適用したか」を記憶し、再起動後に古い版を受け入れないために使います。
+firmwareのダウンロード先であるBG770AのUFSや、更新イメージを置くMCUのBank 1とは別です。
+保存記録が読めないとOTAを止めます。初回準備も含め、[InternalFSの手順](docs/internalfs.md)を参照してください。
+
+### 更新はこの順に進む
+
+次の図は、このレシピの署名必須サンプルで新しい版を適用する経路です。下段の反映は[対応bootloaderを確認済み](docs/bootloader.md)であることが前提です。
+
+```mermaid
+flowchart TD
+  START["起動：最高適用版を読込<br/>現在の版を記録・LTE接続"]
+  READY{"保存状態・LTE接続は正常？"}
+  STOP0["OTAを開始しない"]
+  GET["Metadataからmanifestを取得<br/>形式・対象HW・URL・サイズを確認"]
+  SIG["公開鍵でmanifestの署名検証<br/>次に版・rollout・適用判断"]
+  ACCEPT{"新しい版で、すべての条件を満たす？"}
+  STOP1["取得失敗・不正・旧版・同版・対象外<br/>firmware取得・適用登録をしない"]
+  STAGE["firmwareをGET・応答確認<br/>Bank 1を準備 → UFS経由で書込<br/>読戻し確認・CRC16とSHA-256計算"]
+  VERIFY["全量・CRC16・SHA-256を照合<br/>起動先情報（ベクタ）を確認"]
+  VALID{"取得・書込・全量検証に成功？"}
+  STOP2["失敗：適用登録・更新用リセットをしない<br/>Bank 1に途中データが残る場合がある"]
+  OFF["BG770Aを停止"]
+  REGISTER{"モデム停止・settingsへの適用登録に成功？"}
+  STOP3["失敗を返し、更新用リセットをしない<br/>settings書込失敗は復旧確認が必要"]
+  RESET["MCUをリセット"]
+  COPY["bootloaderがsettingsを参照<br/>Bank 1をBank 0へコピーし、アプリを確認して起動"]
+  CHECK["新アプリが現在の版を記録<br/>版・最高適用版・no updateを確認"]
+  START --> READY
+  READY -->|"いいえ"| STOP0
+  READY -->|"はい"| GET
+  GET -->|"取得・形式確認OK"| SIG
+  GET -->|"失敗"| STOP1
+  SIG --> ACCEPT
+  ACCEPT -->|"いいえ"| STOP1
+  ACCEPT -->|"はい"| STAGE
+  STAGE -->|"転送・書込失敗"| STOP2
+  STAGE -->|"受信完了"| VERIFY
+  VERIFY --> VALID
+  VALID -->|"いいえ"| STOP2
+  VALID -->|"はい"| OFF
+  OFF --> REGISTER
+  REGISTER -->|"いいえ"| STOP3
+  REGISTER -->|"はい"| RESET
+  RESET --> COPY
+  COPY --> CHECK
+```
+
+凡例：四角は処理、ひし形は判定です。失敗経路には「実行しない処理」を記しています。転送・書込み中の失敗も全量検証へ進まず終了します。
+
+**アプリ**はfirmwareを取得する前にmanifestの署名を検証し、署名で保護されたSHA-256と取得データを全量受信後に照合します。
+書込みと全量検証はこの順なので、未検証データも一時的にBank 1へ入りますが、検証失敗なら適用登録しません。
+`discard()` は処理状態を戻すだけで、書込み済み領域を消去する処理ではありません。
+全量検証後もモデム停止とsettings登録に成功して初めて更新用リセットを行います。settings書込みやbootloaderコピー中の電源断からの復旧は保証していません。
+
+**ブートローダー**はBank 1からBank 0へコピーします。2つの領域から起動先を選んで旧版へ戻す仕組みではなく、自動ロールバックはありません。
+起動後の版記録はアプリの `setup()` 到達を示し、業務処理全体の正常性を保証するヘルスチェックではありません。
+署名検証はアプリ側の機能であり、HTTPの暗号化やbootloader secure bootではありません。
+実際の確認は[更新と成功確認](#publish-update)、失敗時は[切り分け](#troubleshooting)へ進みます。
+
+### 初回USB準備と以後のLTE更新
+
+| | 初回：PCとUSBで準備 | 以後：LTEでアプリを更新 |
+|---|---|---|
+| 基盤 | 対応bootloaderを確認し、必要な場合だけ移行。新規端末のInternalFSを確認・準備 | このレシピのOTAはbootloader・SoftDeviceを更新しない。InternalFSを初期化しない |
+| アプリ・鍵 | OTA処理と公開鍵を組み込んだ版1をUSB導入 | 同じOTA処理・鍵の扱いを保った新しい版を取得。秘密鍵は引き続きPC側 |
+| 更新の開始 | USB書込み後にアプリを起動 | manifest公開後、アプリの次の起動時に取得。公開だけでは端末を起こせない |
+| 確認 | 版1、LTE接続、保存記録の正常性 | 新しい版・最高適用版・同じmanifestに対する `no update` を確認 |
+
+最初は[必要なもの](#requirements)から順に進め、USB導入済みなら[更新用ファイルの生成](#update-image)へ進みます。
+版を上げるたびにInternalFSを消したり、版1をUSBで書き戻したりする必要はありません。
+
+<details>
+<summary>図と照合したコード</summary>
+
+- [通常スケッチ](examples/CellularStatusOta/CellularStatusOta.ino)：Metadataのhost/path、許可するfirmwareホスト、署名・版・rolloutの設定、起動時の版記録。
+- [Agent](src/WioOtaAgent.cpp)：manifest取得・判定・firmware取得・検証・モデム停止・適用登録・resetの順序。
+- [署名と版の判定](src/WioOtaSecurity.cpp) / [manifest形式](src/WioOtaManifest.cpp)：署名検証後に版・配信対象を確認。
+- [HTTP/UFS転送](src/WioBg770aHttp.h)、[Flash書込み](src/WioOta.cpp)、[全量検証](src/WioOtaImageVerifier.cpp)、[版の保存](src/WioOtaVersionStore.cpp)。
+- [配信ツール](tools/firmware_manifest.py)：application抽出、ハッシュを含むmanifestの署名。
+- 対象bootloaderリビジョン `3cb5c65` の [起動処理](https://github.com/SeeedJP/Adafruit_nRF52_Bootloader/blob/3cb5c653e3c5390a4fa05fc3ad7219b8e73086e4/src/main.c) と [Bank 1からのコピー処理](https://github.com/SeeedJP/Adafruit_nRF52_Bootloader/blob/3cb5c653e3c5390a4fa05fc3ad7219b8e73086e4/lib/sdk11/components/libraries/bootloader_dfu/dfu_dual_bank.c)。実機の導入イメージは[識別子・配布ZIPの確認手順](docs/bootloader.md)で別途確認します。
+
+</details>
+
+<a id="requirements"></a>
 ## 1. 必要なもの
 
 | 必要なもの | 条件・用途 |
@@ -151,6 +294,7 @@ examples/CellularStatusOta/build/SeeedJP.nrf52.wio_bg770a/CellularStatusOta.ino.
 URL・version・rolloutなどを変更するときは、JSONの手編集ではなく再生成・再署名します。
 次のリリースでは `sample-update` を新しい識別子・パスへ変更し、公開済みバイナリを上書きしません。
 
+<a id="publish-update"></a>
 ## 8. 配信してLTEで版を更新する
 
 1. SIMと同じカバレッジのSORACOMユーザーコンソールで [Harvest Filesへアップロード](https://users.soracom.io/ja-jp/docs/harvest/send-files/)します。ローカルの `dist/sample-update/firmware.bin` の保存先を **`/wio-bg770a/sample-update/firmware.bin`** にします。ディレクトリとファイル名がmanifestのURLのパスと一致することを確認します。
