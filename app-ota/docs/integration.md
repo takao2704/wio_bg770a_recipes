@@ -1,10 +1,10 @@
 # 既存アプリへの組込みと運用上の制約
 
-以下のソース・ツールのパスはレシピのルート `lte-ota/` を基準にしています。
+以下のソース・ツールのパスはレシピのルート `app-ota/` を基準にしています。
 
 PlatformIOではプロジェクトの `lib/WioOtaAgent` へ
 `src/`、`scripts/`、`library.json`、`library.properties`、`LICENSE.txt` をコピーするか、
-`lib_deps` に `WioOtaAgent=symlink:///absolute/path/to/lte-ota` を指定します。
+`lib_deps` に `WioOtaAgent=symlink:///absolute/path/to/app-ota` を指定します。
 Arduino IDEでは[レシピのライブラリ導入手順](../README.md#software)で作る1つのZIPを使います。
 
 PlatformIOのボード・Core・サイズ上限は付属 `platformio.ini` に合わせ、

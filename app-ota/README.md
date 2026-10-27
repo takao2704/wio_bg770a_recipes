@@ -126,11 +126,11 @@ PCの通常のインターネット回線からこれらの端末向けURLへア
 
 1. [Seeed公式の開発環境セットアップ](https://seeedjp.github.io/Wiki/Wio_BG770A/user-manual.html)に従ってArduino IDEを導入します。追加のボードマネージャURLに `https://www.seeed.co.jp/package_SeeedJP_index.json` を追加し（既存URLは残します）、SeeedJP nRF52 Boards **1.5.1** を選びます。
 2. ライブラリマネージャでWioCellular **0.3.15**、ArduinoJson **7.0.4** を導入します。
-3. ターミナルで次を実行します。以後、特記のないコマンドは `lte-ota` ディレクトリから実行します。
+3. ターミナルで次を実行します。以後、特記のないコマンドは `app-ota` ディレクトリから実行します。
 
 ```bash
 git clone https://github.com/SeeedJP/wio_bg770a_recipes.git
-cd wio_bg770a_recipes/lte-ota
+cd wio_bg770a_recipes/app-ota
 python3 -m venv .venv
 .venv/bin/python -m pip install cryptography
 .venv/bin/python tools/package_arduino_library.py
@@ -140,7 +140,7 @@ PRのマージ前に試す場合は、上のclone/cdの代わりに次を使い�
 
 ```bash
 git clone --branch feat/lte-ota-recipe https://github.com/takao2704/wio_bg770a_recipes.git
-cd wio_bg770a_recipes/lte-ota
+cd wio_bg770a_recipes/app-ota
 ```
 
 4. Arduino IDEの「スケッチ」→「ライブラリをインクルード」→「.ZIP形式のライブラリをインストール」で `dist/arduino/WioOtaAgent.zip` を選びます。リポジトリ全体のZIPではありません。旧構成の `WioOta`、`WioBg770aHttp`、`WioOtaAgent` があれば保存場所を控えてバックアップし、同名ヘッダを持つ旧ライブラリと併用しないよう整理します。
@@ -209,7 +209,7 @@ openssl pkey -in "$ota_key_dir/signing-key.pem" -pubout \
 examples/CellularStatusOta/build/SeeedJP.nrf52.wio_bg770a/CellularStatusOta.ino.zip
 ```
 
-4. `lte-ota` ディレクトリで署名付きmanifestとapplication raw binaryを生成します。CLI・PlatformIOの場合は[別経路](docs/build-alternatives.md)のZIPを入力にします。
+4. `app-ota` ディレクトリで署名付きmanifestとapplication raw binaryを生成します。CLI・PlatformIOの場合は[別経路](docs/build-alternatives.md)のZIPを入力にします。
 
 ```bash
 .venv/bin/python tools/firmware_manifest.py \

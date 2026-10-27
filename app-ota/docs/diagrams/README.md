@@ -14,12 +14,12 @@
 このリポジトリのルートから実行します。Python 3、Node.js、Chromeが必要です。描画用依存はリポジトリ外の一時ディレクトリに入れます。
 
 ```bash
-python3 lte-ota/docs/diagrams/generate.py
+python3 app-ota/docs/diagrams/generate.py
 diagram_deps="$(mktemp -d)"
 PUPPETEER_SKIP_DOWNLOAD=true npm install --prefix "$diagram_deps" --no-audit --no-fund puppeteer@23.11.1
 NODE_PATH="$diagram_deps/node_modules" \
   CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' \
-  node lte-ota/docs/diagrams/render-png.cjs
+  node app-ota/docs/diagrams/render-png.cjs
 ```
 
 `CHROME_PATH` は使用するOSのChrome実行ファイルへ変更してください。日本語フォント（macOSのHiragino Kaku Gothic ProN、またはNoto Sans CJK JP）が必要です。フォント差で文字幅が変わるため、PNGを開いて文字の切れ、重なり、矢印の始点・終点を確認してください。SVG、PNG、編集ソースは一緒にコミットします。
